@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fake-credential-generator"
+version = "1.0.0"
+description = "Generate randomised fake user credentials for testing."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+dependencies = ["faker>=24.0.0"]
+
+[project.scripts]
+fake-credential-generator = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
