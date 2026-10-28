@@ -3,7 +3,9 @@ import json
 import os
 import random
 import argparse
+import re
 import sys
+import unicodedata
 from faker import Faker
 
 CORE_FIELDS = [
@@ -30,14 +32,20 @@ DEFAULT_FORMAT = "csv"
 DEFAULT_OUTPUT = "users"
 
 
+def handle_part(name: str) -> str:
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", ascii_name.lower()) or "user"
+
+
 def make_user(fake: Faker, private_ip: bool = False) -> dict:
     first = fake.first_name()
     last  = fake.last_name()
+    first_handle, last_handle = handle_part(first), handle_part(last)
     return {
         "first_name":  first,
         "last_name":   last,
-        "username":    f"{first.lower()}{last.lower()}{random.randint(1, 999)}",
-        "email":       f"{first.lower()}.{last.lower()}{random.randint(1, 99)}@{fake.free_email_domain()}",
+        "username":    f"{first_handle}{last_handle}{random.randint(1, 999)}",
+        "email":       f"{first_handle}.{last_handle}{random.randint(1, 99)}@{fake.free_email_domain()}",
         "password":    fake.password(length=16, special_chars=True, digits=True, upper_case=True),
         "birthday":    fake.date_of_birth(minimum_age=18, maximum_age=80).strftime("%Y-%m-%d"),
         "phone":       fake.phone_number(),
@@ -53,7 +61,6 @@ def make_user(fake: Faker, private_ip: bool = False) -> dict:
 
 
 def build_fields(args) -> list:
-    """Assemble the ordered list of fields based on CLI flags."""
     fields = list(CORE_FIELDS)
     if args.include_address:
         fields.extend(OPTIONAL_FIELDS["address"])
@@ -106,7 +113,14 @@ def save_csv(users: list, path: str, append: bool):
         writer.writerows(users)
 
 
-def save_json(users: list, path: str):
+def save_json(users: list, path: str, append: bool):
+    if append and os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            existing = json.load(f)
+        if not isinstance(existing, list):
+            print(f"  Error: {path} doesn't hold a JSON list, so it can't be appended to.")
+            sys.exit(1)
+        users = existing + users
     with open(path, "w", encoding="utf-8") as f:
         json.dump(users, f, indent=2, ensure_ascii=False)
 
@@ -177,7 +191,7 @@ def main():
         if ext == "csv":
             save_csv(users, path, args.append)
         else:
-            save_json(users, path)
+            save_json(users, path, args.append)
         action = "Appended" if args.append else "Saved"
         print(f"\n  {action} {args.count} record(s) to: {path}")
 
