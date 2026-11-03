@@ -153,7 +153,7 @@ def parse_args():
     p.add_argument("-o", "--output",  type=str, default=None,
                    help="Output filename without extension (default: users)")
     p.add_argument("--fields",        type=str, default=None,
-                   help=f"Comma-separated list of specific fields to include. Overrides --include-* flags.")
+                   help="Comma-separated list of specific fields to include. Overrides --include-* flags.")
     p.add_argument("--no-save",       action="store_true",
                    help="Print to terminal only; do not save a file")
     p.add_argument("--append",        action="store_true",
