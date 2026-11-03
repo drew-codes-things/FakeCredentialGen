@@ -62,6 +62,7 @@ python main.py [options]
 | `--no-save` | off | Print to terminal only, no file written |
 | `--append` | off | Append to existing file instead of overwriting; skips header row if file exists |
 | `--private-ip` | off | Generate private/LAN IPs (`10.x`, `172.16.x`, `192.168.x`) instead of public ones |
+| `--seed` | random | Seed the generator so the same command always gives the same users (handy for repeatable test fixtures) |
 
 ### Examples
 
@@ -81,6 +82,19 @@ Append 100 records to an existing CSV:
 
 ```bash
 python main.py -n 100 --append -o users
+```
+
+Repeatable fixtures: the same seed gives the same users every run
+
+```bash
+python main.py -n 25 --seed 1234 -o fixtures
+```
+
+### Tests
+
+```bash
+pip install -r requirements.txt pytest
+python -m pytest tests
 ```
 
 ---

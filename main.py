@@ -6,6 +6,7 @@ import argparse
 import re
 import sys
 import unicodedata
+from typing import Optional
 from faker import Faker
 
 CORE_FIELDS = [
@@ -37,15 +38,15 @@ def handle_part(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", ascii_name.lower()) or "user"
 
 
-def make_user(fake: Faker, private_ip: bool = False) -> dict:
+def make_user(fake: Faker, rng: random.Random, private_ip: bool = False) -> dict:
     first = fake.first_name()
     last  = fake.last_name()
     first_handle, last_handle = handle_part(first), handle_part(last)
     return {
         "first_name":  first,
         "last_name":   last,
-        "username":    f"{first_handle}{last_handle}{random.randint(1, 999)}",
-        "email":       f"{first_handle}.{last_handle}{random.randint(1, 99)}@{fake.free_email_domain()}",
+        "username":    f"{first_handle}{last_handle}{rng.randint(1, 999)}",
+        "email":       f"{first_handle}.{last_handle}{rng.randint(1, 99)}@{fake.free_email_domain()}",
         "password":    fake.password(length=16, special_chars=True, digits=True, upper_case=True),
         "birthday":    fake.date_of_birth(minimum_age=18, maximum_age=80).strftime("%Y-%m-%d"),
         "phone":       fake.phone_number(),
@@ -82,20 +83,22 @@ def build_fields(args) -> list:
     return fields
 
 
-def generate(count: int, locale: str, fields: list, private_ip: bool = False) -> list:
+def generate(count: int, locale: str, fields: list, private_ip: bool = False,
+             seed: Optional[int] = None) -> list:
     try:
         fake = Faker(locale)
     except AttributeError:
         print(f"  Warning: locale '{locale}' not found, falling back to en_GB.")
         fake = Faker("en_GB")
-    Faker.seed()
+    fake.seed_instance(seed)
+    rng = random.Random(seed)
     users = []
     seen_usernames = set()
     seen_emails = set()
     for _ in range(count):
-        row = make_user(fake, private_ip=private_ip)
+        row = make_user(fake, rng, private_ip=private_ip)
         while row["username"] in seen_usernames or row["email"] in seen_emails:
-            row = make_user(fake, private_ip=private_ip)
+            row = make_user(fake, rng, private_ip=private_ip)
         seen_usernames.add(row["username"])
         seen_emails.add(row["email"])
         users.append({f: row[f] for f in fields})
@@ -168,6 +171,8 @@ def parse_args():
                    help="Include phone number")
     p.add_argument("--include-job",     action="store_true",
                    help="Include job title")
+    p.add_argument("--seed",          type=int, default=None,
+                   help="Seed the generator so the same command gives the same users")
     args = p.parse_args()
     if args.count <= 0:
         p.error("--count must be a positive integer")
@@ -180,7 +185,7 @@ def main():
 
     ip_mode = "private" if args.private_ip else "public"
     print(f"  Generating {args.count} fake user(s) [{args.locale}] [IPv4: {ip_mode}] ...")
-    users = generate(args.count, args.locale, fields, private_ip=args.private_ip)
+    users = generate(args.count, args.locale, fields, private_ip=args.private_ip, seed=args.seed)
 
     print_table(users)
 
