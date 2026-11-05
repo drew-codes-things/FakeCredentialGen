@@ -10,6 +10,8 @@
 
 </div>
 
+![FakeCredentialGen making six seeded fake users](screenshot.png)
+
 ---
 
 Generates realistic-looking fake user records for testing purposes. Each record is built from a Faker locale so names, addresses, phone numbers, and postcodes are region-appropriate. Output is printed as a formatted table in the terminal and saved to a file. No real personal data is used or stored at any point.
